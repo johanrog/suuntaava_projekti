@@ -10,7 +10,6 @@ COPY ./Cargo.toml ./Cargo.toml
 RUN cargo build --release && rm src/*.rs && rm ./target/release/deps/suuntaava_projekti*
 
 COPY ./src ./src
-COPY ./config.json ./
 
 RUN cargo build --release
 
