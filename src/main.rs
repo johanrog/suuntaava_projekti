@@ -69,7 +69,7 @@ async fn main() {
     let measurements = Arc::new(Mutex::new(Vec::with_capacity(10)));
 
     let http_handler = RequestHandler::new(db_writes_enabled.clone(), config.write_password.clone(), measurements.clone());
-    let http_addr = ([0, 0, 0, 0], 3000).into();
+    let http_addr = ([0, 0, 0, 0], 8080).into();
     let http_service = make_service_fn(move |_| {
         let handler = http_handler.clone();
         async move {
