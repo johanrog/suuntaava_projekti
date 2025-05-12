@@ -1,5 +1,6 @@
 use rumqttc::{MqttOptions, AsyncClient, Event, Incoming, QoS};
 use influxdb2::{Client, models::DataPoint};
+use tokio::time::{sleep, Duration};
 use tokio::task;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::Server;
@@ -154,7 +155,10 @@ async fn main() {
                     _ => (),
                 }
             },
-            Err(e) => println!("mqtt: {e}"),
+            Err(e) => {
+                println!("mqtt: {e}");
+                sleep(Duration::from_secs(3)).await;
+            },
         }
     }
 }
