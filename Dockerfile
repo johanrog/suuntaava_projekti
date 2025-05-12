@@ -18,7 +18,7 @@ FROM debian:bullseye-slim
 RUN USER=root apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 ARG CONFIG_JSON_KEY
-RUN if [ -n "{CONFIG_JSON_KEY}" ]; then echo ${CONFIG_JSON_KEY} | base64 --decode > ./config.json; fi
+RUN if [ -n "${CONFIG_JSON_KEY}" ]; then echo ${CONFIG_JSON_KEY} | base64 --decode > ./config.json; fi
 
 COPY --from=build /suuntaava_projekti/target/release/suuntaava_projekti usr/src/suuntaava_projekti
 
