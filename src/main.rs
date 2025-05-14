@@ -14,6 +14,8 @@ use std::{fs, fmt};
 mod request_handler;
 use request_handler::RequestHandler;
 
+const MAX_LOCAL_MEASUREMENTS: usize = 12;
+
 #[derive(Clone, Deserialize)]
 struct Config {
     mqtt_broker: String,
@@ -25,6 +27,7 @@ struct Config {
     db_bucket: String,
     db_token: String,
     db_measurement: String,
+    graph_url: String,
     write_password: String,
 }
 
@@ -67,9 +70,15 @@ async fn main() {
     };
     
     let db_writes_enabled: Arc<Mutex<bool>> = Arc::new(Mutex::new(true));
-    let measurements = Arc::new(Mutex::new(Vec::with_capacity(10)));
-
-    let http_handler = RequestHandler::new(db_writes_enabled.clone(), config.write_password.clone(), measurements.clone());
+    let measurements = Arc::new(Mutex::new(Vec::with_capacity(MAX_LOCAL_MEASUREMENTS)));
+    
+    // http server setup
+    let http_handler = RequestHandler::new(
+        db_writes_enabled.clone(), 
+        config.write_password.clone(),
+        config.graph_url.clone(),
+        measurements.clone()
+    );
     let http_addr = ([0, 0, 0, 0], 8080).into();
     let http_service = make_service_fn(move |_| {
         let handler = http_handler.clone();
@@ -85,28 +94,40 @@ async fn main() {
 
     println!("Listening on http://{}", http_addr);
 
+    // spawn the http server in a new task
     task::spawn(async move {
         if let Err(e) = http_server.await {
             eprintln!("Server error: {:}", e);
         }
     });
 
+    // mqtt client setup
     let mut mqtt_options = MqttOptions::new("sp-rumqtt", config.mqtt_broker.clone(), 1883);
     mqtt_options.set_credentials(config.mqtt_user.clone(), config.mqtt_password.clone());
 
     let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
 
-    client.subscribe(config.mqtt_topic.clone(), QoS::AtMostOnce).await.unwrap();
-
     loop {
         match eventloop.poll().await {
             Ok(notification) => {
+                // ignore outgoing events
                 let Event::Incoming(incoming) = &notification else {
                     continue;
                 };
 
                 match incoming {
-                    Incoming::ConnAck(_) => println!("mqtt: Connected"),
+                    Incoming::ConnAck(_) => {
+                        println!("mqtt: Connected");
+                        let client_clone = client.clone();
+                        let topic = config.mqtt_topic.clone();
+                        // subscribe to the topic, new task maybe not necessary?
+                        task::spawn(async move {
+                            match client_clone.subscribe(topic, QoS::AtMostOnce).await {
+                                Ok(..) => println!("mqtt: Subscribe sent"),
+                                Err(e) => eprintln!("mqtt: Subscribe send failed: {:?}", e),
+                            }
+                        });
+                    },
                     Incoming::SubAck(_) => println!("mqtt: Subscribed"),
                     Incoming::Publish(publish) => {
                         println!("mqtt: Publish");
@@ -123,13 +144,14 @@ async fn main() {
                         };
 
                         let mut m = measurements.lock().unwrap();
-                        if m.len() == 10 {
+                        if m.len() == MAX_LOCAL_MEASUREMENTS {
                             m.remove(0);
                         }
                         m.push(payload.clone());
 
                         if writes_enabled {
                             let config_clone = config.clone();
+                            // do the database write in a new task
                             task::spawn(async move {
                                 let influxdb_client = Client::new(config_clone.db_url, config_clone.db_org, config_clone.db_token);
 
@@ -140,23 +162,23 @@ async fn main() {
                                     .field("CO2", payload.co2)
                                     .field("pCount", payload.p_count)
                                     .timestamp(payload.time)
-//                                    .timestamp(Utc::now().timestamp_nanos_opt().unwrap())
                                     .build()
                                     .unwrap()];
 
-                                let write_result = influxdb_client.write(&config_clone.db_bucket, stream::iter(data_point)).await;
-                                match write_result {
+                                match influxdb_client.write(&config_clone.db_bucket, stream::iter(data_point)).await {
                                     Ok(_) => println!("Database write ok!"),
                                     Err(e) => eprintln!("Database write failed: {:}", e),
                                 }
                             });
                         }
                     },
+                    // ignore other incoming events
                     _ => (),
                 }
             },
             Err(e) => {
                 println!("mqtt: {e}");
+                // retry connection after 3 seconds
                 sleep(Duration::from_secs(3)).await;
             },
         }
