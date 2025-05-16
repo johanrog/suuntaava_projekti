@@ -1,0 +1,242 @@
+[
+    {
+        "id": "5dea7ea097acddac",
+        "type": "tab",
+        "label": "Flow 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "7d977958cb2353aa",
+        "type": "http request",
+        "z": "5dea7ea097acddac",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "Content-Type",
+                "keyValue": "",
+                "valueType": "application/json",
+                "valueValue": ""
+            }
+        ],
+        "x": 990,
+        "y": 600,
+        "wires": [
+            [
+                "f6fcb54b59d27191",
+                "f30908f68c738803"
+            ]
+        ]
+    },
+    {
+        "id": "d72b33661fda2f03",
+        "type": "ui_button",
+        "z": "5dea7ea097acddac",
+        "name": "Enable writes",
+        "group": "aa4fa058d436f596",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Enable writes",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "true",
+        "payloadType": "bool",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 440,
+        "y": 620,
+        "wires": [
+            [
+                "76a3be2f0dfef954"
+            ]
+        ]
+    },
+    {
+        "id": "59f942b0eaf1b730",
+        "type": "ui_button",
+        "z": "5dea7ea097acddac",
+        "name": "Disable writes",
+        "group": "aa4fa058d436f596",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Disable writes",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "false",
+        "payloadType": "bool",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 440,
+        "y": 660,
+        "wires": [
+            [
+                "76a3be2f0dfef954"
+            ]
+        ]
+    },
+    {
+        "id": "76a3be2f0dfef954",
+        "type": "function",
+        "z": "5dea7ea097acddac",
+        "name": "function 1",
+        "func": "var server = context.get('server')||\"\";\nvar writes_enabled = context.get('writes_enabled')||true;\nvar pw = context.get('pw')||\"\";\n\nif(msg.topic == \"server\") {\n    server = msg.payload;\n    context.set('server', msg.payload);\n} else if(msg.topic == \"pw\") {\n    pw = msg.payload;\n    context.set('pw', msg.payload);\n} else {\n    writes_enabled = msg.payload;\n    context.set('writes_enabled', msg.payload);\n}\n\nlet payload = {writes_enabled: writes_enabled, password: pw};\n\nmsg.payload = payload;\nmsg.url = server;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 600,
+        "wires": [
+            [
+                "da3d43c3bd392124"
+            ]
+        ]
+    },
+    {
+        "id": "f6fcb54b59d27191",
+        "type": "debug",
+        "z": "5dea7ea097acddac",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1160,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "2cd2c1fce3cb929d",
+        "type": "ui_text_input",
+        "z": "5dea7ea097acddac",
+        "name": "",
+        "label": "Server",
+        "tooltip": "",
+        "group": "aa4fa058d436f596",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "mode": "text",
+        "delay": "0",
+        "topic": "server",
+        "sendOnBlur": true,
+        "className": "",
+        "topicType": "str",
+        "x": 470,
+        "y": 540,
+        "wires": [
+            [
+                "76a3be2f0dfef954"
+            ]
+        ]
+    },
+    {
+        "id": "da3d43c3bd392124",
+        "type": "json",
+        "z": "5dea7ea097acddac",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 830,
+        "y": 600,
+        "wires": [
+            [
+                "7d977958cb2353aa"
+            ]
+        ]
+    },
+    {
+        "id": "831e92416530d259",
+        "type": "ui_text_input",
+        "z": "5dea7ea097acddac",
+        "name": "",
+        "label": "Password",
+        "tooltip": "",
+        "group": "aa4fa058d436f596",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "mode": "password",
+        "delay": "0",
+        "topic": "pw",
+        "sendOnBlur": true,
+        "className": "",
+        "topicType": "str",
+        "x": 460,
+        "y": 580,
+        "wires": [
+            [
+                "76a3be2f0dfef954"
+            ]
+        ]
+    },
+    {
+        "id": "f30908f68c738803",
+        "type": "ui_text",
+        "z": "5dea7ea097acddac",
+        "group": "aa4fa058d436f596",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Server response",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 1180,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "aa4fa058d436f596",
+        "type": "ui_group",
+        "name": "Remote client",
+        "tab": "a359c850062d3c65",
+        "order": 1,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "a359c850062d3c65",
+        "type": "ui_tab",
+        "name": "Control",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]

@@ -79,7 +79,9 @@ async fn main() {
         config.graph_url.clone(),
         measurements.clone()
     );
+
     let http_addr = ([0, 0, 0, 0], 8080).into();
+    // create the http service
     let http_service = make_service_fn(move |_| {
         let handler = http_handler.clone();
         async move {
